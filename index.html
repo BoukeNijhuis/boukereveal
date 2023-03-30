@@ -1,40 +1,215 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+    <title>KubeCon</title>
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css">
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/white-cinq.css">
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section><h2>Scoreboard</h2>
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+        </section>
+        <section data-markdown>
+            <textarea data-template>
+                ## Consultancy
+                Kubernetes Certified Service Provider (KCSP)
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+                Only a few in the 🇳🇱
+                ---
+                ## KubeScan
+                We help you moving to Kubernetes and/or Cloud
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+                A tailored approach to get there 🎯
+                ---
+                ## Training
+                Kubernetes Training Partner (KTP)
+
+                Less than sixty in the 🌍
+                ---
+                ## KubeDoom
+                You have  **5 minutes**  to:
+                1. Fix the deployment  🛠️
+                2. Shoot as many demons (pods) as possible  🔫
+
+                The number of killed demons will be your score.
+            </textarea>
+        </section>
+    </div>
+    <div id="myLogo" style="background: url('footer.png');
+                        background-position: bottom;
+                        background-size: contain;
+                        background-repeat: no-repeat;
+                        width: 100%;
+                        height: 100%;">
+
+    </div>
+</div>
+
+<script src="dist/reveal.js"></script>
+<script src="plugin/notes/notes.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script src="plugin/chart/chart.min.js"></script>
+<script src="plugin/chart/chartjs-plugin-datalabels.min.js"></script>
+
+<script>
+
+    Reveal.initialize({
+        hash: true,
+        controls: false,
+
+        autoSlide: 5000,
+        loop: true,
+        autoSlideStoppable: false,
+
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    })
+    ;
+
+    function csvToJSON(csv) {
+        let lines = csv.split("\n");
+        let result = [];
+        let headers;
+        headers = lines[0].split(",");
+
+        for (let i = 1; i < lines.length; i++) {
+            let obj = {};
+
+            if (lines[i] === undefined || lines[i].trim() === "") {
+                continue;
+            }
+
+            let words = lines[i].split(",");
+            for (let j = 0; j < words.length; j++) {
+                let key = headers[j].trim();
+                let value = words[j].trim();
+
+                if (j === 1) {
+                    obj[key] = parseInt(value)
+                } else {
+                    obj[key] = value;
+                }
+            }
+
+            result.push(obj);
+        }
+        return result;
+    }
+
+    function readFile(fileName) {
+        let xhr = new XMLHttpRequest();
+        let fileContents;
+
+        xhr.onload = function () {
+            fileContents = xhr.responseText
+        };
+        xhr.open('GET', fileName, false);
+        xhr.send();
+        return fileContents;
+    }
+
+    function updateData() {
+        let fileContents = readFile('data.csv');
+
+        // read the csv and turn it into json
+        const data = csvToJSON(fileContents);
+
+        // sort the data
+        data.sort((a, b) => (a.x < b.x) ? 1 : (a.x > b.x) ? -1 : 0);
+
+        // only show the first ten
+        return data.slice(0, 9);
+    }
+
+    function formatter(value, context) {
+        return value.x;
+    }
+
+    function createChart() {
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                datasets: [{
+                    label: 'Score',
+                    data: updateData()
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'end',
+                        offset: -40,
+                        formatter,
+                        font: {
+                            weight: 'bold',
+                            size: 16,
+                        },
+                        color: '#fff'
+                    }
+
+                },
+                indexAxis: 'y',
+                backgroundColor: ['#1ea2da'],
+                // maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        display: false
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 20
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChart() {
+
+        if (Reveal.isLastSlide()) {
+            chart.destroy()
+            chart = createChart()
+        }
+    }
+
+    const ctx = document.getElementById('myChart');
+
+    Chart.register(ChartDataLabels);
+
+    let chart = createChart()
+
+    console.log(chart)
+
+    setInterval(updateChart, 1000);
+
+</script>
+</body>
 </html>
